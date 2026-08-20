@@ -197,6 +197,7 @@ class RenderRequest(BaseModel):
     env: str = "podcast"
     custom_dict: dict = {}
     use_bgm: bool = False
+    priority_token: str = ""
 
 async def process_job_queue():
     global IS_PROCESSING
@@ -238,28 +239,42 @@ async def process_job_queue():
                     progress_callback=progress_cb
                 )
                 JOB_STATUS[job_id]["status"] = "DONE"
+                JOB_STATUS[job_id]["zip_url"] = f"/api/download/{job_id}"
                 JOB_STATUS[job_id]["progress"] = 100
                 JOB_STATUS[job_id]["zip_path"] = zip_path
+                print(f"[JOB DONE] {job_id}")
             except Exception as e:
-                err_trace = traceback.format_exc()
-                JOB_STATUS[job_id]["status"] = "ERROR"
+                import traceback
+                traceback.print_exc()
+                JOB_STATUS[job_id]["status"] = "FAILED"
                 JOB_STATUS[job_id]["error"] = str(e)
-                diag = {"job_id": job_id, "error": str(e), "traceback": err_trace}
+
+            # Save diagnostic
+            try:
+                diag = {
+                    "job_id": job_id,
+                    "voice": job["voice"],
+                    "char_count": len(job["script"]),
+                    "chunks": job.get("total_chunks", 0),
+                    "status": JOB_STATUS[job_id]["status"],
+                    "error": JOB_STATUS[job_id].get("error")
+                }
                 with open(os.path.join(OUTPUT_DIR, f"{job_id}.diag.json"), "w", encoding="utf-8") as f:
                     json.dump(diag, f, ensure_ascii=False, indent=2)
+            except:
+                pass
 
             JOB_QUEUE.pop(0)
 
             # Cập nhật lại vị trí hàng đợi cho các job còn lại
             for i, jid in enumerate(JOB_QUEUE):
                 if jid in JOB_STATUS:
-                    JOB_STATUS[jid]["queue_pos"] = i + 1
+                    JOB_STATUS[jid]["queue_pos"] = i + 1 if IS_PROCESSING else i
     finally:
         IS_PROCESSING = False
 
 @app.post("/api/render")
 async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
-    # Kiểm tra giới hạn ký tự
     if len(req.script) > MAX_CHAR_LIMIT:
         raise HTTPException(
             status_code=400,
@@ -268,26 +283,26 @@ async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
     if not req.script.strip():
         raise HTTPException(status_code=400, detail="Kịch bản trống.")
 
-    # Kiểm tra hàng đợi đã đầy chưa
-    active_count = len([j for j in JOB_STATUS.values() if j["status"] in ["QUEUED", "RUNNING", "MERGING"]])
-    if active_count >= MAX_QUEUE_SIZE:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Hệ thống đang bận ({active_count}/{MAX_QUEUE_SIZE} jobs). Vui lòng thử lại sau vài phút."
-        )
+    priority_level = 3
+    if req.priority_token == "VKT_S1":
+        priority_level = 1
+    elif req.priority_token == "VKT_S2":
+        priority_level = 2
+
+    if priority_level == 3:
+        guest_count = sum(1 for jid in JOB_QUEUE if JOB_STATUS.get(jid, {}).get("priority_level", 3) == 3)
+        if guest_count >= 5:
+            raise HTTPException(status_code=429, detail="Hệ thống đang quá tải, vui lòng xếp hàng thử lại sau vài phút!")
 
     job_id = f"nvj_{uuid.uuid4().hex[:8]}"
-    queue_pos = active_count + 1
-
+    
     JOB_STATUS[job_id] = {
         "status": "QUEUED",
         "progress": 0,
         "chunks_done": 0,
         "total_chunks": 0,
-        "queue_pos": queue_pos,
         "error": None,
         "zip_path": None,
-        # Lưu lại params để recovery nếu cần
         "script": req.script,
         "voice": req.voice,
         "rate": req.rate,
@@ -299,8 +314,29 @@ async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
         "env": req.env,
         "use_bgm": req.use_bgm,
         "custom_dict": req.custom_dict,
+        "priority_level": priority_level
     }
-    JOB_QUEUE.append(job_id)
+    
+    if not JOB_QUEUE:
+        JOB_QUEUE.append(job_id)
+    else:
+        insert_idx = 1 if IS_PROCESSING else 0
+        if priority_level == 1:
+            while insert_idx < len(JOB_QUEUE) and JOB_STATUS.get(JOB_QUEUE[insert_idx], {}).get("priority_level", 3) <= 1:
+                insert_idx += 1
+            JOB_QUEUE.insert(insert_idx, job_id)
+        elif priority_level == 2:
+            while insert_idx < len(JOB_QUEUE) and JOB_STATUS.get(JOB_QUEUE[insert_idx], {}).get("priority_level", 3) <= 2:
+                insert_idx += 1
+            JOB_QUEUE.insert(insert_idx, job_id)
+        else:
+            JOB_QUEUE.append(job_id)
+
+    queue_pos = JOB_QUEUE.index(job_id)
+    if not IS_PROCESSING:
+        queue_pos = 1
+    JOB_STATUS[job_id]["queue_pos"] = queue_pos
+
     background_tasks.add_task(process_job_queue)
 
     return JSONResponse({
