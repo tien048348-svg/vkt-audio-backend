@@ -360,6 +360,21 @@ async def get_status(job_id: str):
         "error": job.get("error"),
     })
 
+@app.get("/api/audio/{job_id}")
+async def get_audio(job_id: str):
+    job = JOB_STATUS.get(job_id)
+    if not job or job.get("status") != "DONE":
+        return JSONResponse({"error": "Audio chưa sẵn sàng"}, status_code=404)
+    zip_path = job.get("zip_path")
+    if not zip_path:
+        return JSONResponse({"error": "Không tìm thấy file zip"}, status_code=404)
+    
+    mp3_path = zip_path.replace(".zip", ".mp3")
+    if not os.path.exists(mp3_path):
+        return JSONResponse({"error": "Không tìm thấy file MP3"}, status_code=404)
+        
+    return FileResponse(mp3_path, media_type="audio/mpeg", headers={"Accept-Ranges": "bytes"})
+
 @app.get("/api/download/{job_id}")
 async def download_zip(job_id: str):
     job = JOB_STATUS.get(job_id)
