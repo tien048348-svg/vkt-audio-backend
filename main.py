@@ -1,14 +1,28 @@
 import asyncio
 import os
-from fastapi import FastAPI, BackgroundTasks
+import uuid
+import json
+import traceback
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from engine_v2 import process_full_job
 
-app = FastAPI(title="NarraVoice Studio API")
+# ========== CẤU HÌNH HỆ THỐNG ==========
+VERSION = "1.8.0"
+MAX_CHAR_LIMIT = 60000       # ~60 phút audio
+MAX_QUEUE_SIZE = 3           # Tối đa 3 job đang chờ/chạy
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "jobs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Cấu hình CORS để Frontend (Vercel/Localhost) gọi được Backend
+# ========== TRẠNG THÁI TOÀN CỤC (In-Memory) ==========
+JOB_STATUS: dict = {}   # job_id -> dict thông tin job
+JOB_QUEUE: list = []    # Hàng đợi theo thứ tự
+IS_PROCESSING = False   # Đang có job chạy không
+VOICE_CACHE = None
+
+app = FastAPI(title="NarraVoice Studio API", version=VERSION)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,136 +31,61 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class RenderRequest(BaseModel):
-    script: str
-    voice: str
-    rate: int
-    pitch: int
-    env: str
-    volume: int = 0
-    reverb: int = 0
-    echo: int = 0
-    bass: int = 0
-    custom_dict: dict = {}
+# ========== HEALTH ENDPOINT (Wake-up ping + Auto-detect) ==========
+@app.get("/api/health")
+async def health():
+    active = sum(1 for j in JOB_STATUS.values() if j["status"] in ["QUEUED", "RUNNING", "MERGING"])
+    return {
+        "status": "ok",
+        "version": VERSION,
+        "queue_count": active,
+        "queue_capacity": MAX_QUEUE_SIZE,
+    }
 
-OUTPUT_DIR = r"E:\HMKT\VKT_ECOSYSTEM_CORE\VKT_NARRAVOICE_WEB\backend\jobs"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-# Giả lập Database trạng thái
-JOB_STATUS = {}
-
-async def run_render_task(job_id: str, req: RenderRequest):
-    JOB_STATUS[job_id] = "processing"
-    try:
-        zip_path = await process_full_job(
-            script=req.script,
-            voice=req.voice,
-            rate=req.rate,
-            pitch=req.pitch,
-            volume=req.volume,
-            reverb=req.reverb,
-            echo=req.echo,
-            bass=req.bass,
-            output_dir=OUTPUT_DIR,
-            job_id=job_id,
-            custom_dict=req.custom_dict
-        )
-        JOB_STATUS[job_id] = "done"
-    except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        print(f"Lỗi: {e}")
-        
-        # TẠO HỒ SƠ BẮT LỖI (DIAGNOSTIC DUMP) THEO CHUẨN V3.4
-        diag_data = {
-            "job_id": job_id,
-            "inputs": {"voice": req.voice, "rate": req.rate, "style": req.env},
-            "error_message": str(e),
-            "traceback": error_trace
-        }
-        import json
-        with open(os.path.join(OUTPUT_DIR, f"{job_id}.diag.json"), "w", encoding="utf-8") as f:
-            json.dump(diag_data, f, ensure_ascii=False, indent=2)
-            
-        JOB_STATUS[job_id] = "error"
-
-@app.get("/api/diagnostic/{job_id}")
-async def download_diagnostic(job_id: str):
-    diag_path = os.path.join(OUTPUT_DIR, f"{job_id}.diag.json")
-    if os.path.exists(diag_path):
-        return FileResponse(diag_path, filename=f"Error_Log_{job_id}.json", media_type="application/json")
-    return JSONResponse({"error": "No diagnostic file found"}, status_code=404)
-
-@app.post("/api/render")
-async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
-    import uuid
-    job_id = f"nvj_{uuid.uuid4().hex[:8]}"
-    background_tasks.add_task(run_render_task, job_id, req)
-    return JSONResponse({"job_id": job_id, "message": "Job started"})
-
-@app.get("/api/status/{job_id}")
-async def get_status(job_id: str):
-    return JSONResponse({"job_id": job_id, "status": JOB_STATUS.get(job_id, "not_found")})
-
-@app.get("/api/download/{job_id}")
-async def download_zip(job_id: str):
-    zip_path = os.path.join(OUTPUT_DIR, f"{job_id}.zip")
-    if os.path.exists(zip_path):
-        return FileResponse(zip_path, filename=f"NarraVoice_{job_id}.zip", media_type="application/zip")
-    return JSONResponse({"error": "File not found"}, status_code=404)
-
-# Cache danh sách giọng đọc để tải siêu tốc
-VOICE_CACHE = {}
-
+# ========== VOICE LIST ==========
 def get_friendly_locale(locale: str) -> str:
     lang_map = {
-        "vi": "🇻🇳 Tiếng Việt", "en": "🌐 Tiếng Anh", "ja": "🇯🇵 Tiếng Nhật", "ko": "🇰🇷 Tiếng Hàn", "zh": "🇨🇳 Tiếng Trung",
-        "es": "🇪🇸 Tiếng Tây Ban Nha", "fr": "🇫🇷 Tiếng Pháp", "de": "🇩🇪 Tiếng Đức", "it": "🇮🇹 Tiếng Ý", "ru": "🇷🇺 Tiếng Nga",
-        "pt": "🇵🇹 Tiếng Bồ Đào Nha", "ar": "🇸🇦 Tiếng Ả Rập", "th": "🇹🇭 Tiếng Thái", "id": "🇮🇩 Tiếng Indonesia", "ms": "🇲🇾 Tiếng Mã Lai",
-        "nl": "🇳🇱 Tiếng Hà Lan", "tr": "🇹🇷 Tiếng Thổ Nhĩ Kỳ", "pl": "🇵🇱 Tiếng Ba Lan", "sv": "🇸🇪 Tiếng Thụy Điển", "da": "🇩🇰 Tiếng Đan Mạch",
-        "fi": "🇫🇮 Tiếng Phần Lan", "el": "🇬🇷 Tiếng Hy Lạp", "hi": "🇮🇳 Tiếng Hindi", "bn": "🇧🇩 Tiếng Bengal", "ta": "🇮🇳 Tiếng Tamil",
-        "te": "🇮🇳 Tiếng Telugu", "ur": "🇵🇰 Tiếng Urdu", "fa": "🇮🇷 Tiếng Ba Tư", "he": "🇮🇱 Tiếng Do Thái", "cs": "🇨🇿 Tiếng Séc",
-        "hu": "🇭🇺 Tiếng Hungary", "ro": "🇷🇴 Tiếng Romania", "uk": "🇺🇦 Tiếng Ukraina", "bg": "🇧🇬 Tiếng Bulgaria", "sk": "🇸🇰 Tiếng Slovak",
-        "hr": "🇭🇷 Tiếng Croatia", "sr": "🇷🇸 Tiếng Serbia", "sl": "🇸🇮 Tiếng Slovenia", "lt": "🇱🇹 Tiếng Litva", "lv": "🇱🇻 Tiếng Latvia",
-        "et": "🇪🇪 Tiếng Estonia", "ca": "🇪🇸 Tiếng Catalan", "eu": "🇪🇸 Tiếng Basque", "gl": "🇪🇸 Tiếng Galicia", "cy": "🏴󠁧󠁢󠁷󠁬󠁳󠁿 Tiếng Wales",
-        "ga": "🇮🇪 Tiếng Ireland", "mt": "🇲🇹 Tiếng Malta", "is": "🇮🇸 Tiếng Iceland", "af": "🇿🇦 Tiếng Afrikaans", "sw": "🇰🇪 Tiếng Swahili",
-        "zu": "🇿🇦 Tiếng Zulu", "sq": "🇦🇱 Tiếng Albania", "mk": "🇲🇰 Tiếng Macedonia", "ka": "🇬🇪 Tiếng Gruzia", "hy": "🇦🇲 Tiếng Armenia",
-        "az": "🇦🇿 Tiếng Azerbaijan", "kk": "🇰🇿 Tiếng Kazakhstan", "uz": "🇺🇿 Tiếng Uzbekistan", "km": "🇰🇭 Tiếng Khmer", "lo": "🇱🇦 Tiếng Lào",
-        "my": "🇲🇲 Tiếng Myanmar", "ne": "🇳🇵 Tiếng Nepal", "si": "🇱🇰 Tiếng Sinhala", "gu": "🇮🇳 Tiếng Gujarati", "mr": "🇮🇳 Tiếng Marathi",
-        "kn": "🇮🇳 Tiếng Kannada", "ml": "🇮🇳 Tiếng Malayalam", "su": "🇮🇩 Tiếng Sunda", "jv": "🇮🇩 Tiếng Java", "tl": "🇵🇭 Tiếng Tagalog"
+        "vi": "🇻🇳 Tiếng Việt", "en": "🌐 Tiếng Anh", "zh": "🇨🇳 Tiếng Trung",
+        "ja": "🇯🇵 Tiếng Nhật", "ko": "🇰🇷 Tiếng Hàn", "fr": "🇫🇷 Tiếng Pháp",
+        "de": "🇩🇪 Tiếng Đức", "es": "🇪🇸 Tiếng Tây Ban Nha", "it": "🇮🇹 Tiếng Ý",
+        "pt": "🇵🇹 Tiếng Bồ Đào Nha", "ru": "🇷🇺 Tiếng Nga", "ar": "🇸🇦 Tiếng Ả Rập",
+        "hi": "🇮🇳 Tiếng Hindi", "th": "🇹🇭 Tiếng Thái", "id": "🇮🇩 Tiếng Indonesia",
+        "ms": "🇲🇾 Tiếng Mã Lai", "tr": "🇹🇷 Tiếng Thổ Nhĩ Kỳ", "pl": "🇵🇱 Tiếng Ba Lan",
+        "nl": "🇳🇱 Tiếng Hà Lan", "sv": "🇸🇪 Tiếng Thụy Điển", "da": "🇩🇰 Tiếng Đan Mạch",
+        "fi": "🇫🇮 Tiếng Phần Lan", "nb": "🇳🇴 Tiếng Na Uy", "cs": "🇨🇿 Tiếng Séc",
+        "el": "🇬🇷 Tiếng Hy Lạp", "he": "🇮🇱 Tiếng Hebrew", "ro": "🇷🇴 Tiếng Romania",
+        "hu": "🇭🇺 Tiếng Hungary", "uk": "🇺🇦 Tiếng Ukraina", "ta": "🇮🇳 Tiếng Tamil",
+        "te": "🇮🇳 Tiếng Telugu", "bn": "🇧🇩 Tiếng Bengali", "ur": "🇵🇰 Tiếng Urdu",
+        "fa": "🇮🇷 Tiếng Ba Tư", "sk": "🇸🇰 Tiếng Slovak", "bg": "🇧🇬 Tiếng Bulgaria",
+        "hr": "🇭🇷 Tiếng Croatia", "sr": "🇷🇸 Tiếng Serbia", "ca": "🇪🇸 Tiếng Catalan",
+        "af": "🇿🇦 Tiếng Afrikaans", "sw": "🇰🇪 Tiếng Swahili", "tl": "🇵🇭 Tiếng Tagalog",
+        "km": "🇰🇭 Tiếng Khmer", "lo": "🇱🇦 Tiếng Lào", "my": "🇲🇲 Tiếng Myanmar",
+        "jv": "🇮🇩 Tiếng Java", "zu": "🇿🇦 Tiếng Zulu", "cy": "🏴󠁧󠁢󠁷󠁬󠁳󠁿 Tiếng Wales",
+        "ga": "🇮🇪 Tiếng Ireland", "mt": "🇲🇹 Tiếng Malta", "is": "🇮🇸 Tiếng Iceland",
     }
     REGION_MAP = {
-        "US": "Mỹ", "GB": "Vương Quốc Anh", "AU": "Úc", "CA": "Canada", "HK": "Hồng Kông",
-        "IE": "Ireland", "IN": "Ấn Độ", "NZ": "New Zealand", "SG": "Singapore", "PH": "Philippines",
-        "ZA": "Nam Phi", "KE": "Kenya", "NG": "Nigeria", "TZ": "Tanzania", "CN": "Trung Quốc",
-        "TW": "Đài Loan", "MO": "Ma Cao", "JP": "Nhật Bản", "KR": "Hàn Quốc", "VN": "Việt Nam",
-        "ES": "Tây Ban Nha", "MX": "Mexico", "AR": "Argentina", "CO": "Colombia", "PE": "Peru",
-        "CL": "Chile", "VE": "Venezuela", "EC": "Ecuador", "GT": "Guatemala", "CU": "Cuba",
-        "BO": "Bolivia", "DO": "Cộng hòa Dominica", "HN": "Honduras", "PY": "Paraguay", "SV": "El Salvador",
-        "NI": "Nicaragua", "CR": "Costa Rica", "PR": "Puerto Rico", "PA": "Panama", "UY": "Uruguay",
-        "FR": "Pháp", "CA": "Canada", "CH": "Thụy Sĩ", "BE": "Bỉ", "DE": "Đức", "AT": "Áo",
-        "IT": "Ý", "RU": "Nga", "PT": "Bồ Đào Nha", "BR": "Brazil", "SA": "Ả Rập Xê Út", "AE": "UAE",
-        "EG": "Ai Cập", "TH": "Thái Lan", "ID": "Indonesia", "MY": "Malaysia", "NL": "Hà Lan",
-        "TR": "Thổ Nhĩ Kỳ", "PL": "Ba Lan", "SE": "Thụy Điển", "DK": "Đan Mạch", "FI": "Phần Lan",
-        "GR": "Hy Lạp", "BD": "Bangladesh", "PK": "Pakistan", "IR": "Iran", "IL": "Israel",
-        "CZ": "Séc", "HU": "Hungary", "RO": "Romania", "UA": "Ukraina", "BG": "Bulgaria", "SK": "Slovakia",
-        "HR": "Croatia", "RS": "Serbia", "SI": "Slovenia", "LT": "Litva", "LV": "Latvia", "EE": "Estonia",
-        "MT": "Malta", "IS": "Iceland", "AL": "Albania", "MK": "Macedonia", "GE": "Gruzia", "AM": "Armenia",
-        "AZ": "Azerbaijan", "KZ": "Kazakhstan", "UZ": "Uzbekistan", "KH": "Campuchia", "LA": "Lào",
-        "MM": "Myanmar", "NP": "Nepal", "LK": "Sri Lanka"
+        "VN": "Việt Nam", "US": "Mỹ", "GB": "Anh", "AU": "Úc", "CA": "Canada",
+        "CN": "Trung Quốc", "TW": "Đài Loan", "HK": "Hồng Kông", "JP": "Nhật",
+        "KR": "Hàn Quốc", "IN": "Ấn Độ", "SG": "Singapore", "PH": "Philippines",
+        "MY": "Malaysia", "ID": "Indonesia", "TH": "Thái Lan", "FR": "Pháp",
+        "DE": "Đức", "ES": "Tây Ban Nha", "IT": "Ý", "RU": "Nga", "BR": "Brazil",
+        "MX": "Mexico", "PT": "Bồ Đào Nha", "SA": "Ả Rập Xê Út", "AE": "UAE",
+        "NL": "Hà Lan", "PL": "Ba Lan", "SE": "Thụy Điển", "DK": "Đan Mạch",
+        "FI": "Phần Lan", "NO": "Na Uy", "TR": "Thổ Nhĩ Kỳ", "GR": "Hy Lạp",
+        "ZA": "Nam Phi", "KE": "Kenya", "EG": "Ai Cập", "NG": "Nigeria",
+        "NZ": "New Zealand", "IE": "Ireland", "AT": "Áo", "CH": "Thụy Sĩ",
+        "IL": "Israel", "IR": "Iran", "PK": "Pakistan", "BD": "Bangladesh",
+        "UA": "Ukraina", "CZ": "Séc", "HU": "Hungary", "RO": "Romania",
+        "BG": "Bulgaria", "HR": "Croatia", "RS": "Serbia", "SK": "Slovakia",
+        "LT": "Litva", "LV": "Latvia", "EE": "Estonia",
     }
-
     parts = locale.split("-")
     lang_code = parts[0]
     region_code = parts[1] if len(parts) > 1 else ""
-    
-    base_name = lang_map.get(lang_code, f"Ngôn ngữ ({lang_code})")
-    
-    # Nếu có mã vùng, dịch mã vùng sang tên quốc gia tiếng Việt
+    base_name = lang_map.get(lang_code, f"({lang_code})")
     if region_code:
-        vietnamese_region = REGION_MAP.get(region_code, region_code)
-        return f"{base_name} ({vietnamese_region})"
-    
+        region_name = REGION_MAP.get(region_code, region_code)
+        return f"{base_name} ({region_name})"
     return base_name
 
 @app.get("/api/voices")
@@ -154,38 +93,27 @@ async def get_voices():
     global VOICE_CACHE
     if VOICE_CACHE:
         return VOICE_CACHE
-        
     import edge_tts
     voices = await edge_tts.list_voices()
     grouped = {}
-    
     for v in voices:
-        raw_locale = v.get("Locale", "Unknown")
-        market = get_friendly_locale(raw_locale)
-        
+        market = get_friendly_locale(v.get("Locale", "Unknown"))
         if market not in grouped:
             grouped[market] = []
-            
-        name = f"{v['ShortName'].split('-')[-1].replace('Neural', '')} ({'Nữ' if v.get('Gender') == 'Female' else 'Nam'})"
-        
-        grouped[market].append({
-            "id": v["ShortName"], 
-            "name": name
-        })
-        
-    # Sắp xếp ưu tiên Tiếng Việt, Tiếng Anh lên đầu
-    priority = ["🇻🇳 Tiếng Việt (Việt Nam)", "🌐 Tiếng Anh (Mỹ)", "🌐 Tiếng Anh (Vương Quốc Anh)"]
+        name_part = v['ShortName'].split('-')[-1].replace('Neural', '')
+        gender = 'Nữ' if v.get('Gender') == 'Female' else 'Nam'
+        grouped[market].append({"id": v["ShortName"], "name": f"{name_part} ({gender})"})
+    priority = ["🇻🇳 Tiếng Việt (Việt Nam)", "🌐 Tiếng Anh (Mỹ)", "🌐 Tiếng Anh (Anh)"]
     sorted_grouped = {}
     for p in priority:
         if p in grouped:
             sorted_grouped[p] = grouped.pop(p)
-            
     for k in sorted(grouped.keys()):
         sorted_grouped[k] = grouped[k]
-        
     VOICE_CACHE = sorted_grouped
     return sorted_grouped
 
+# ========== PREVIEW ==========
 class PreviewRequest(BaseModel):
     voice: str
     text: str = ""
@@ -199,62 +127,194 @@ class PreviewRequest(BaseModel):
 
 @app.post("/api/preview")
 async def preview_voice(req: PreviewRequest):
-    voice = req.voice
-    text = req.text if req.text else "VKT xin chào bạn. Hôm nay, chúng ta cùng lắng nghe một giọng nói rõ ràng, tự nhiên và giàu cảm xúc. Trong buổi sớm yên bình, gió khẽ lay hàng cây, còn phía xa, một câu chuyện mới đang bắt đầu."
-    
     import edge_tts
-    import uuid
     import subprocess
     from engine_v2 import apply_pronunciation_filter
-    
     uid = uuid.uuid4().hex[:6]
     raw_path = os.path.join(OUTPUT_DIR, f"raw_{uid}.mp3")
     final_path = os.path.join(OUTPUT_DIR, f"preview_{uid}.mp3")
-    
-    # Lọc phát âm trước khi gọi Edge-TTS
-    text_filtered = apply_pronunciation_filter(text, voice, req.custom_dict)
-    
-    # 1. Edge-TTS (Tốc độ, Cao độ, Âm lượng)
+    text = req.text or "VKT xin chào bạn. Hôm nay, chúng ta cùng lắng nghe một giọng nói rõ ràng, tự nhiên và giàu cảm xúc."
+    text_filtered = apply_pronunciation_filter(text, req.voice, req.custom_dict)
     rate_str = f"+{req.rate}%" if req.rate >= 0 else f"{req.rate}%"
     pitch_str = f"+{req.pitch}Hz" if req.pitch >= 0 else f"{req.pitch}Hz"
     vol_str = f"+{req.volume}%" if req.volume >= 0 else f"{req.volume}%"
-    
-    comm = edge_tts.Communicate(text_filtered, voice, rate=rate_str, pitch=pitch_str, volume=vol_str)
+    comm = edge_tts.Communicate(text_filtered, req.voice, rate=rate_str, pitch=pitch_str, volume=vol_str)
     audio_chunks = []
     async for chunk in comm.stream():
         if chunk["type"] == "audio":
             audio_chunks.append(chunk["data"])
-            
     with open(raw_path, "wb") as f:
         f.write(b"".join(audio_chunks))
-
-    # 2. Xử lý Vang, Vọng, Bass qua FFmpeg nếu có
     if req.reverb > 0 or req.echo > 0 or req.bass > 0:
         filters = []
         if req.bass > 0:
-            # Bass boost cực mạnh: tăng tới 25dB ở dải 100Hz
-            gain = (req.bass / 100) * 25 
-            filters.append(f"bass=g={gain}:f=100:w=0.5")
-            
+            filters.append(f"bass=g={(req.bass/100)*25}:f=100:w=0.5")
         if req.reverb > 0 or req.echo > 0:
-            # Echo delay từ 50ms đến 600ms (rõ mồn một)
-            # Decay (độ vang dài) lên tới 0.9 (kéo dài 2-3 giây)
-            delay = int(50 + (req.echo / 100) * 550) 
+            delay = int(50 + (req.echo / 100) * 550)
             decay = 0.2 + (max(req.reverb, req.echo) / 100) * 0.7
             filters.append(f"aecho=0.8:0.9:{delay}:{decay}")
-            
         try:
             ffmpeg_exe = os.path.join(os.path.dirname(__file__), "ffmpeg.exe")
-            cmd = [ffmpeg_exe if os.path.exists(ffmpeg_exe) else 'ffmpeg', '-y', '-i', raw_path, '-af', ','.join(filters), final_path]
+            cmd = [ffmpeg_exe if os.path.exists(ffmpeg_exe) else "ffmpeg", "-y", "-i", raw_path, "-af", ",".join(filters), final_path]
             subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
             if os.path.exists(raw_path): os.remove(raw_path)
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            # Fallback nếu máy người dùng chưa cài FFmpeg
+        except:
             final_path = raw_path
     else:
         final_path = raw_path
-    
     return FileResponse(final_path, media_type="audio/mpeg")
+
+# ========== RENDER ENGINE WITH QUEUE ==========
+class RenderRequest(BaseModel):
+    script: str
+    voice: str
+    rate: int = 0
+    pitch: int = 0
+    volume: int = 0
+    reverb: int = 0
+    echo: int = 0
+    bass: int = 0
+    env: str = "podcast"
+    custom_dict: dict = {}
+
+async def process_job_queue():
+    global IS_PROCESSING
+    if IS_PROCESSING:
+        return
+    IS_PROCESSING = True
+    try:
+        while JOB_QUEUE:
+            job_id = JOB_QUEUE[0]
+            job = JOB_STATUS.get(job_id)
+            if not job:
+                JOB_QUEUE.pop(0)
+                continue
+
+            job["status"] = "RUNNING"
+            job["queue_pos"] = 0
+
+            async def progress_cb(pct: int, done: int, total: int):
+                if job_id in JOB_STATUS:
+                    JOB_STATUS[job_id]["progress"] = pct
+                    JOB_STATUS[job_id]["chunks_done"] = done
+                    JOB_STATUS[job_id]["total_chunks"] = total
+
+            try:
+                zip_path = await process_full_job(
+                    script=job["script"],
+                    voice=job["voice"],
+                    rate=job["rate"],
+                    pitch=job["pitch"],
+                    volume=job["volume"],
+                    reverb=job["reverb"],
+                    echo=job["echo"],
+                    bass=job["bass"],
+                    output_dir=OUTPUT_DIR,
+                    job_id=job_id,
+                    custom_dict=job["custom_dict"],
+                    progress_callback=progress_cb
+                )
+                JOB_STATUS[job_id]["status"] = "DONE"
+                JOB_STATUS[job_id]["progress"] = 100
+                JOB_STATUS[job_id]["zip_path"] = zip_path
+            except Exception as e:
+                err_trace = traceback.format_exc()
+                JOB_STATUS[job_id]["status"] = "ERROR"
+                JOB_STATUS[job_id]["error"] = str(e)
+                diag = {"job_id": job_id, "error": str(e), "traceback": err_trace}
+                with open(os.path.join(OUTPUT_DIR, f"{job_id}.diag.json"), "w", encoding="utf-8") as f:
+                    json.dump(diag, f, ensure_ascii=False, indent=2)
+
+            JOB_QUEUE.pop(0)
+
+            # Cập nhật lại vị trí hàng đợi cho các job còn lại
+            for i, jid in enumerate(JOB_QUEUE):
+                if jid in JOB_STATUS:
+                    JOB_STATUS[jid]["queue_pos"] = i + 1
+    finally:
+        IS_PROCESSING = False
+
+@app.post("/api/render")
+async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
+    # Kiểm tra giới hạn ký tự
+    if len(req.script) > MAX_CHAR_LIMIT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Kịch bản quá dài ({len(req.script):,} ký tự). Tối đa {MAX_CHAR_LIMIT:,} ký tự (~60 phút audio)."
+        )
+    if not req.script.strip():
+        raise HTTPException(status_code=400, detail="Kịch bản trống.")
+
+    # Kiểm tra hàng đợi đã đầy chưa
+    active_count = len([j for j in JOB_STATUS.values() if j["status"] in ["QUEUED", "RUNNING", "MERGING"]])
+    if active_count >= MAX_QUEUE_SIZE:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Hệ thống đang bận ({active_count}/{MAX_QUEUE_SIZE} jobs). Vui lòng thử lại sau vài phút."
+        )
+
+    job_id = f"nvj_{uuid.uuid4().hex[:8]}"
+    queue_pos = active_count + 1
+
+    JOB_STATUS[job_id] = {
+        "status": "QUEUED",
+        "progress": 0,
+        "chunks_done": 0,
+        "total_chunks": 0,
+        "queue_pos": queue_pos,
+        "error": None,
+        "zip_path": None,
+        # Lưu lại params để recovery nếu cần
+        "script": req.script,
+        "voice": req.voice,
+        "rate": req.rate,
+        "pitch": req.pitch,
+        "volume": req.volume,
+        "reverb": req.reverb,
+        "echo": req.echo,
+        "bass": req.bass,
+        "custom_dict": req.custom_dict,
+    }
+    JOB_QUEUE.append(job_id)
+    background_tasks.add_task(process_job_queue)
+
+    return JSONResponse({
+        "job_id": job_id,
+        "queue_pos": queue_pos,
+        "message": "Job đã được xếp hàng" if queue_pos > 1 else "Job đang bắt đầu xử lý"
+    })
+
+@app.get("/api/status/{job_id}")
+async def get_status(job_id: str):
+    job = JOB_STATUS.get(job_id)
+    if not job:
+        return JSONResponse({"status": "not_found"}, status_code=404)
+    return JSONResponse({
+        "job_id": job_id,
+        "status": job["status"],
+        "progress": job["progress"],
+        "chunks_done": job["chunks_done"],
+        "total_chunks": job["total_chunks"],
+        "queue_pos": job.get("queue_pos", 0),
+        "error": job.get("error"),
+    })
+
+@app.get("/api/download/{job_id}")
+async def download_zip(job_id: str):
+    job = JOB_STATUS.get(job_id)
+    if not job or job["status"] != "DONE":
+        return JSONResponse({"error": "Job chưa hoàn thành hoặc không tồn tại"}, status_code=404)
+    zip_path = job.get("zip_path")
+    if not zip_path or not os.path.exists(zip_path):
+        return JSONResponse({"error": "File không tìm thấy trên server"}, status_code=404)
+    return FileResponse(zip_path, filename=f"NarraVoice_{job_id}.zip", media_type="application/zip")
+
+@app.get("/api/diagnostic/{job_id}")
+async def download_diagnostic(job_id: str):
+    diag_path = os.path.join(OUTPUT_DIR, f"{job_id}.diag.json")
+    if os.path.exists(diag_path):
+        return FileResponse(diag_path, filename=f"Error_{job_id}.json", media_type="application/json")
+    return JSONResponse({"error": "Không có file chẩn đoán lỗi"}, status_code=404)
 
 if __name__ == "__main__":
     import uvicorn
