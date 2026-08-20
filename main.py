@@ -164,6 +164,17 @@ async def preview_voice(req: PreviewRequest):
         final_path = raw_path
     return FileResponse(final_path, media_type="audio/mpeg")
 
+# ========== BGM SERVE (for preview on frontend) ==========
+@app.get("/api/bgm/{style}")
+async def serve_bgm(style: str):
+    bgm_path = os.path.join(os.path.dirname(__file__), "bgm", f"{style}.mp3")
+    if not os.path.exists(bgm_path):
+        # Fallback to podcast BGM if style not found
+        bgm_path = os.path.join(os.path.dirname(__file__), "bgm", "podcast.mp3")
+    if not os.path.exists(bgm_path):
+        raise HTTPException(status_code=404, detail="BGM not found")
+    return FileResponse(bgm_path, media_type="audio/mpeg")
+
 # ========== RENDER ENGINE WITH QUEUE ==========
 class RenderRequest(BaseModel):
     script: str
