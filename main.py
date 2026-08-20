@@ -296,7 +296,7 @@ async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
 
     from datetime import datetime
     now_str = datetime.now().strftime("%d-%m-%Y_%Hh%Mm%Ss")
-    job_id = f"VKT_{now_str}_{uuid.uuid4().hex[:4]}"
+    job_id = f"VKT_{now_str}"
     
     JOB_STATUS[job_id] = {
         "status": "QUEUED",
