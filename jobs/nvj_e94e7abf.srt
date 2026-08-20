@@ -1,0 +1,7 @@
+﻿1
+00:00:00,100 --> 00:00:06,386
+Lỗi này là do sự vội vàng đáng trách của tôi, cảm ơn sếp đã "cảnh tỉnh" đúng lúc để ứng dụng thực sự trở nên hoàn mỹ!
+
+2
+00:00:06,336 --> 00:00:10,531
+Xin sếp kiểm chứng lại lần cuối, nút Nghe Thử bây giờ đã hoàn toàn hoạt động

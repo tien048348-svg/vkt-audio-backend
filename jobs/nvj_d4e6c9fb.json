@@ -1,0 +1,27 @@
+﻿[
+  {
+    "text": "1. Tự động nhận diện Thể loại (Genre Detection): Khi user paste kịch bản vào, hệ thống quét và gợi ý ngay \"Template Đạo diễn\":",
+    "start_ms": 100,
+    "end_ms": 8812
+  },
+  {
+    "text": "Sách nói / Kể chuyện (Audiobook): Gợi ý giảm 5% tốc độ (Rate -5%), giữ độ trầm ấm, thêm khoảng nghỉ (Pause) 1000ms giữa các đoạn để tạo chiều sâu.",
+    "start_ms": 8762,
+    "end_ms": 19562
+  },
+  {
+    "text": "Tin tức / Podcast (News): Gợi ý tăng tốc 10% (Rate +10%), cao độ chuẩn (Pitch 0), ngắt nghỉ nhanh (Pause 500ms), giọng đọc dứt khoát.",
+    "start_ms": 19562,
+    "end_ms": 29737
+  },
+  {
+    "text": "ri viu phim / tích tóc (Fast-paced): Tốc độ cao (Rate +15% đến +20%), không có khoảng lặng thừa, âm lượng tối đa.",
+    "start_ms": 29737,
+    "end_ms": 38337
+  },
+  {
+    "text": "2. Gợi ý Giọng đọc theo vai (Smart Casting",
+    "start_ms": 38337,
+    "end_ms": 42087
+  }
+]

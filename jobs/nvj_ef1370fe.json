@@ -1,0 +1,97 @@
+﻿[
+  {
+    "text": "TẦNG 1: ây ai ĐẠO DIỄN KỊCH BẢN (Smart Script Analysis)",
+    "start_ms": 100,
+    "end_ms": 4287
+  },
+  {
+    "text": "Thay vì bắt người dùng tự mò mẫm, hệ thống làm hộ 80% công việc ban đầu.",
+    "start_ms": 4237,
+    "end_ms": 10062
+  },
+  {
+    "text": "1. Tự động nhận diện Thể loại (Genre Detection): Khi user paste kịch bản vào, hệ thống quét và gợi ý ngay \"Template Đạo diễn\"",
+    "start_ms": 10062,
+    "end_ms": 18399
+  },
+  {
+    "text": "Sách nói / Kể chuyện (Audiobook): Gợi ý giảm 5% tốc độ (Rate -5%), giữ độ trầm ấm, thêm khoảng nghỉ (Pause) 1000ms giữa các đoạn để tạo chiều sâu.",
+    "start_ms": 18400,
+    "end_ms": 28850
+  },
+  {
+    "text": "Tin tức / Podcast (News): Gợi ý tăng tốc 10% (Rate +10%), cao độ chuẩn (Pitch 0), ngắt nghỉ nhanh (Pause 500ms), giọng đọc dứt khoát.",
+    "start_ms": 28850,
+    "end_ms": 40575
+  },
+  {
+    "text": "Review phim / Tiktok (Fast-paced): Tốc độ cao (Rate +15% đến +20%), không có khoảng lặng thừa, âm lượng tối đa.",
+    "start_ms": 40575,
+    "end_ms": 51025
+  },
+  {
+    "text": "2. Gợi ý Giọng đọc theo vai (Smart Casting)",
+    "start_ms": 51025,
+    "end_ms": 54537
+  },
+  {
+    "text": "Phát hiện nhân vật [ÔNG LÃO]: Tự động suggest Giọng Nam, Pitch -15% (trầm xuống), Rate -10% (chậm lại).",
+    "start_ms": 54537,
+    "end_ms": 63724
+  },
+  {
+    "text": "Phát hiện [TRẺ EM]: Suggest Giọng Nữ/Trẻ, Pitch +15% (cao lên), Rate +5%.",
+    "start_ms": 63725,
+    "end_ms": 72437
+  },
+  {
+    "text": "TẦNG 2: MÔI TRƯỜNG ÂM THANH (Acoustic Environments)",
+    "start_ms": 72437,
+    "end_ms": 76624
+  },
+  {
+    "text": "Giọng đọc không chỉ cần hay, mà phải đặt đúng vào không gian (Sử dụng hệ thống FFMPEG Audio Filters ở Backend).",
+    "start_ms": 76625,
+    "end_ms": 84100
+  },
+  {
+    "text": "Người dùng chỉ cần chọn 1 click từ UI thay vì tự chỉnh thông số kỹ thuật phức tạp:",
+    "start_ms": 84100,
+    "end_ms": 90387
+  },
+  {
+    "text": "Phòng Thu (Studio Standard): Âm thanh khô, sạch, lọc nhiễu 100%.",
+    "start_ms": 90387,
+    "end_ms": 95999
+  },
+  {
+    "text": "Mặc định)",
+    "start_ms": 96000,
+    "end_ms": 97637
+  },
+  {
+    "text": "Hội Trường (Hall Reverb): Thêm tiếng vang lớn, phù hợp cho diễn văn, phát thanh công cộng.",
+    "start_ms": 97637,
+    "end_ms": 103399
+  },
+  {
+    "text": "Qua Điện Thoại (Telephone EQ): Cắt bass, tăng mid, thêm độ rè nhẹ.",
+    "start_ms": 103400,
+    "end_ms": 108062
+  },
+  {
+    "text": "Rất cần cho kịch bản có cảnh gọi điện.",
+    "start_ms": 108062,
+    "end_ms": 111399
+  },
+  {
+    "text": "Radio Cũ (Lo-Fi/Vinyl): Thêm tiếng xước đĩa, bóp méo âm thanh nhẹ cho các đoạn hồi tưởng (Flashback).",
+    "start_ms": 111400,
+    "end_ms": 118087
+  },
+  {
+    "text": "Hang Động (Cave Echo): Tiếng vọng sâu và dài.",
+    "start_ms": 118087,
+    "end_ms": 121349
+  }
+]

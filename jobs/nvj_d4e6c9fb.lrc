@@ -1,0 +1,5 @@
+﻿[00:00.10]1. Tự động nhận diện Thể loại (Genre Detection): Khi user paste kịch bản vào, hệ thống quét và gợi ý ngay "Template Đạo diễn":
+[00:08.76]Sách nói / Kể chuyện (Audiobook): Gợi ý giảm 5% tốc độ (Rate -5%), giữ độ trầm ấm, thêm khoảng nghỉ (Pause) 1000ms giữa các đoạn để tạo chiều sâu.
+[00:19.56]Tin tức / Podcast (News): Gợi ý tăng tốc 10% (Rate +10%), cao độ chuẩn (Pitch 0), ngắt nghỉ nhanh (Pause 500ms), giọng đọc dứt khoát.
+[00:29.73]ri viu phim / tích tóc (Fast-paced): Tốc độ cao (Rate +15% đến +20%), không có khoảng lặng thừa, âm lượng tối đa.
+[00:38.33]2. Gợi ý Giọng đọc theo vai (Smart Casting

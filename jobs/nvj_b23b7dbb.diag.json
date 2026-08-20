@@ -1,0 +1,10 @@
+{
+  "job_id": "nvj_b23b7dbb",
+  "inputs": {
+    "voice": "vi-VN-HoaiMyNeural",
+    "rate": 0,
+    "style": "podcast"
+  },
+  "error_message": "No audio was received. Please verify that your parameters are correct.",
+  "traceback": "Traceback (most recent call last):\n  File \"E:\\HMKT\\VKT_ECOSYSTEM_CORE\\VKT_NARRAVOICE_WEB\\backend\\main.py\", line 41, in run_render_task\n    zip_path = await process_full_job(\n               ^^^^^^^^^^^^^^^^^^^^^^^\n    ...<11 lines>...\n    )\n    ^\n  File \"E:\\HMKT\\VKT_ECOSYSTEM_CORE\\VKT_NARRAVOICE_WEB\\backend\\engine_v2.py\", line 183, in process_full_job\n    results = await asyncio.gather(*tasks)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\HMKT\\VKT_ECOSYSTEM_CORE\\VKT_NARRAVOICE_WEB\\backend\\engine_v2.py\", line 178, in fetch_chunk\n    audio_bytes, timings = await synthesize_turn(chunk_text, voice, rate, pitch, volume, custom_dict)\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\HMKT\\VKT_ECOSYSTEM_CORE\\VKT_NARRAVOICE_WEB\\backend\\engine_v2.py\", line 106, in synthesize_turn\n    if attempt == 2: raise e\n                     ^^^^^^^\n  File \"E:\\HMKT\\VKT_ECOSYSTEM_CORE\\VKT_NARRAVOICE_WEB\\backend\\engine_v2.py\", line 95, in synthesize_turn\n    async for chunk in communicate.stream():\n    ...<5 lines>...\n            timings.append(WordTiming(word=chunk[\"text\"], start_ms=start_ms, end_ms=start_ms + dur_ms))\n  File \"E:\\HMKT\\VKT_ECOSYSTEM_CORE\\VKT_NARRAVOICE_WEB\\backend\\venv\\Lib\\site-packages\\edge_tts\\communicate.py\", line 588, in stream\n    async for message in self.__stream():\n        yield message\n  File \"E:\\HMKT\\VKT_ECOSYSTEM_CORE\\VKT_NARRAVOICE_WEB\\backend\\venv\\Lib\\site-packages\\edge_tts\\communicate.py\", line 562, in __stream\n    raise NoAudioReceived(\n        \"No audio was received. Please verify that your parameters are correct.\"\n    )\nedge_tts.exceptions.NoAudioReceived: No audio was received. Please verify that your parameters are correct.\n"
+}

@@ -1,0 +1,6 @@
+﻿[00:00.10]TẦNG 1: ây ai ĐẠO DIỄN KỊCH BẢN (Smart Script Analysis)
+[00:04.83]Thay vì bắt người dùng tự mò mẫm, hệ thống làm hộ 80% công việc ban đầu.
+[00:10.13]1. Tự động nhận diện Thể loại (Genre Detection): Khi user paste kịch bản vào, hệ thống quét và gợi ý ngay "Template Đạo diễn":
+[00:18.85]Sách nói / Kể chuyện (Audiobook): Gợi ý giảm 5% tốc độ (Rate -5%), giữ độ trầm ấm, thêm khoảng nghỉ (Pause) 1000ms giữa các đoạn để tạo chiều sâu.
+[00:29.65]Tin tức / Podcast (News): Gợi ý tăng tốc 10% (Rate +10%), cao độ chuẩn (Pitch 0), ngắt nghỉ nhanh (Pause 500ms), giọng đọc dứt khoát.
+[00:39.80]ri viu phim / tích tóc (Fast-paced): Tốc độ cao (Rate +15% đến +20%), không có khoảng lặng thừa, âm lượng tối đa.

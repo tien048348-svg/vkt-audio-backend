@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+edge-tts
+pydantic
+python-multipart
+aiofiles
+firebase-admin

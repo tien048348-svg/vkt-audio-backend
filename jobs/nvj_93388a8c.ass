@@ -1,0 +1,12 @@
+﻿[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,Bold,Italic,BorderStyle,Shadow,Alignment,MarginL,MarginR,MarginV
+Style: Default,Arial,72,&H00FFFFFF,1,0,1,1,2,100,100,60
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+Dialogue: 0,0:00:00.10,0:00:52.17,Default,,0,0,0,,{\k478}TẦNG 1: ây ai ĐẠO DIỄN KỊCH BẢN (Smart Script Analysis) {\k530}Thay vì bắt người dùng tự mò mẫm, hệ thống làm hộ 80% công việc ban đầu. {\k871}1. Tự động nhận diện Thể loại (Genre Detection): Khi user paste kịch bản vào, hệ thống quét và gợi ý ngay "Template Đạo diễn": {\k1080}Sách nói / Kể chuyện (Audiobook): Gợi ý giảm 5% tốc độ (Rate -5%), giữ độ trầm ấm, thêm khoảng nghỉ (Pause) 1000ms giữa các đoạn để tạo chiều sâu. {\k1017}Tin tức / Podcast (News): Gợi ý tăng tốc 10% (Rate +10%), cao độ chuẩn (Pitch 0), ngắt nghỉ nhanh (Pause 500ms), giọng đọc dứt khoát. {\k860}ri viu phim / tích tóc (Fast-paced): Tốc độ cao (Rate +15% đến +20%), không có khoảng lặng thừa, âm lượng tối đa. {\k375}2. Gợi ý Giọng đọc theo vai (Smart Casting

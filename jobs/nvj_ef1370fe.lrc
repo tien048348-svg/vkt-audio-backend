@@ -1,0 +1,19 @@
+﻿[00:00.10]TẦNG 1: ây ai ĐẠO DIỄN KỊCH BẢN (Smart Script Analysis)
+[00:04.23]Thay vì bắt người dùng tự mò mẫm, hệ thống làm hộ 80% công việc ban đầu.
+[00:10.06]1. Tự động nhận diện Thể loại (Genre Detection): Khi user paste kịch bản vào, hệ thống quét và gợi ý ngay "Template Đạo diễn"
+[00:18.40]Sách nói / Kể chuyện (Audiobook): Gợi ý giảm 5% tốc độ (Rate -5%), giữ độ trầm ấm, thêm khoảng nghỉ (Pause) 1000ms giữa các đoạn để tạo chiều sâu.
+[00:28.85]Tin tức / Podcast (News): Gợi ý tăng tốc 10% (Rate +10%), cao độ chuẩn (Pitch 0), ngắt nghỉ nhanh (Pause 500ms), giọng đọc dứt khoát.
+[00:40.57]Review phim / Tiktok (Fast-paced): Tốc độ cao (Rate +15% đến +20%), không có khoảng lặng thừa, âm lượng tối đa.
+[00:51.02]2. Gợi ý Giọng đọc theo vai (Smart Casting)
+[00:54.53]Phát hiện nhân vật [ÔNG LÃO]: Tự động suggest Giọng Nam, Pitch -15% (trầm xuống), Rate -10% (chậm lại).
+[01:03.72]Phát hiện [TRẺ EM]: Suggest Giọng Nữ/Trẻ, Pitch +15% (cao lên), Rate +5%.
+[01:12.43]TẦNG 2: MÔI TRƯỜNG ÂM THANH (Acoustic Environments)
+[01:16.62]Giọng đọc không chỉ cần hay, mà phải đặt đúng vào không gian (Sử dụng hệ thống FFMPEG Audio Filters ở Backend).
+[01:24.10]Người dùng chỉ cần chọn 1 click từ UI thay vì tự chỉnh thông số kỹ thuật phức tạp:
+[01:30.38]Phòng Thu (Studio Standard): Âm thanh khô, sạch, lọc nhiễu 100%.
+[01:36.00]Mặc định)
+[01:37.63]Hội Trường (Hall Reverb): Thêm tiếng vang lớn, phù hợp cho diễn văn, phát thanh công cộng.
+[01:43.40]Qua Điện Thoại (Telephone EQ): Cắt bass, tăng mid, thêm độ rè nhẹ.
+[01:48.06]Rất cần cho kịch bản có cảnh gọi điện.
+[01:51.40]Radio Cũ (Lo-Fi/Vinyl): Thêm tiếng xước đĩa, bóp méo âm thanh nhẹ cho các đoạn hồi tưởng (Flashback).
+[01:58.08]Hang Động (Cave Echo): Tiếng vọng sâu và dài.

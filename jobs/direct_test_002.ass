@@ -1,0 +1,12 @@
+﻿[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,Bold,Italic,BorderStyle,Shadow,Alignment,MarginL,MarginR,MarginV
+Style: Default,Arial,72,&H00FFFFFF,1,0,1,1,2,100,100,60
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+Dialogue: 0,0:00:00.10,0:00:06.00,Default,,0,0,0,,{\k395}xi i âu của vê ka tê vừa chốt deal ma kít tinh. {\k200}Hãy tải áp ngay!

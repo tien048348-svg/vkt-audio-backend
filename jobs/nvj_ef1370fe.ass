@@ -1,0 +1,14 @@
+﻿[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,Bold,Italic,BorderStyle,Shadow,Alignment,MarginL,MarginR,MarginV
+Style: Default,Arial,72,&H00FFFFFF,1,0,1,1,2,100,100,60
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+Dialogue: 0,0:00:00.10,0:01:03.72,Default,,0,0,0,,{\k418}TẦNG 1: ây ai ĐẠO DIỄN KỊCH BẢN (Smart Script Analysis) {\k582}Thay vì bắt người dùng tự mò mẫm, hệ thống làm hộ 80% công việc ban đầu. {\k833}1. Tự động nhận diện Thể loại (Genre Detection): Khi user paste kịch bản vào, hệ thống quét và gợi ý ngay "Template Đạo diễn" {\k1045}Sách nói / Kể chuyện (Audiobook): Gợi ý giảm 5% tốc độ (Rate -5%), giữ độ trầm ấm, thêm khoảng nghỉ (Pause) 1000ms giữa các đoạn để tạo chiều sâu. {\k1172}Tin tức / Podcast (News): Gợi ý tăng tốc 10% (Rate +10%), cao độ chuẩn (Pitch 0), ngắt nghỉ nhanh (Pause 500ms), giọng đọc dứt khoát. {\k1045}Review phim / Tiktok (Fast-paced): Tốc độ cao (Rate +15% đến +20%), không có khoảng lặng thừa, âm lượng tối đa. {\k351}2. Gợi ý Giọng đọc theo vai (Smart Casting) {\k918}Phát hiện nhân vật [ÔNG LÃO]: Tự động suggest Giọng Nam, Pitch -15% (trầm xuống), Rate -10% (chậm lại).
+Dialogue: 0,0:01:03.72,0:01:48.06,Default,,0,0,0,,{\k871}Phát hiện [TRẺ EM]: Suggest Giọng Nữ/Trẻ, Pitch +15% (cao lên), Rate +5%. {\k418}TẦNG 2: MÔI TRƯỜNG ÂM THANH (Acoustic Environments) {\k747}Giọng đọc không chỉ cần hay, mà phải đặt đúng vào không gian (Sử dụng hệ thống FFMPEG Audio Filters ở Backend). {\k628}Người dùng chỉ cần chọn 1 click từ UI thay vì tự chỉnh thông số kỹ thuật phức tạp: {\k561}Phòng Thu (Studio Standard): Âm thanh khô, sạch, lọc nhiễu 100%. {\k163}Mặc định) {\k576}Hội Trường (Hall Reverb): Thêm tiếng vang lớn, phù hợp cho diễn văn, phát thanh công cộng. {\k466}Qua Điện Thoại (Telephone EQ): Cắt bass, tăng mid, thêm độ rè nhẹ.
+Dialogue: 0,0:01:48.06,0:02:01.34,Default,,0,0,0,,{\k333}Rất cần cho kịch bản có cảnh gọi điện. {\k668}Radio Cũ (Lo-Fi/Vinyl): Thêm tiếng xước đĩa, bóp méo âm thanh nhẹ cho các đoạn hồi tưởng (Flashback). {\k326}Hang Động (Cave Echo): Tiếng vọng sâu và dài.
