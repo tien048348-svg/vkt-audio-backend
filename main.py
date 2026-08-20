@@ -273,6 +273,32 @@ async def process_job_queue():
     finally:
         IS_PROCESSING = False
 
+
+async def cleanup_old_files_task():
+    import time
+    while True:
+        try:
+            now = time.time()
+            retention_seconds = 24 * 3600  # 24 gio
+            if os.path.exists(OUTPUT_DIR):
+                for filename in os.listdir(OUTPUT_DIR):
+                    filepath = os.path.join(OUTPUT_DIR, filename)
+                    if os.path.isfile(filepath):
+                        file_mtime = os.path.getmtime(filepath)
+                        if now - file_mtime > retention_seconds:
+                            try:
+                                os.remove(filepath)
+                                print(f"[CLEANUP] Deleted old file: {filename}")
+                            except:
+                                pass
+        except Exception as e:
+            print(f"[CLEANUP ERROR] {e}")
+        await asyncio.sleep(3600)  # Kiem tra moi 1 gio
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(cleanup_old_files_task())
+
 @app.post("/api/render")
 async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
     if len(req.script) > MAX_CHAR_LIMIT:
