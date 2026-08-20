@@ -294,7 +294,9 @@ async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
         if guest_count >= 5:
             raise HTTPException(status_code=429, detail="Hệ thống đang quá tải, vui lòng xếp hàng thử lại sau vài phút!")
 
-    job_id = f"nvj_{uuid.uuid4().hex[:8]}"
+    from datetime import datetime
+    now_str = datetime.now().strftime("%d-%m-%Y_%Hh%Mm%Ss")
+    job_id = f"VKT_{now_str}_{uuid.uuid4().hex[:4]}"
     
     JOB_STATUS[job_id] = {
         "status": "QUEUED",
