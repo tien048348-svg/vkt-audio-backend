@@ -45,7 +45,7 @@ async def health():
 # ========== VOICE LIST ==========
 def get_friendly_locale(locale: str) -> str:
     lang_map = {
-        "vi": "🇻🇳 Tiếng Việt", "en": "🌐 Tiếng Anh", "zh": "🇨🇳 Tiếng Trung",
+        "vi": "🇻🇳 Tiếng Việt", "en": "🇺🇸 Tiếng Anh", "zh": "🇨🇳 Tiếng Trung",
         "ja": "🇯🇵 Tiếng Nhật", "ko": "🇰🇷 Tiếng Hàn", "fr": "🇫🇷 Tiếng Pháp",
         "de": "🇩🇪 Tiếng Đức", "es": "🇪🇸 Tiếng Tây Ban Nha", "it": "🇮🇹 Tiếng Ý",
         "pt": "🇵🇹 Tiếng Bồ Đào Nha", "ru": "🇷🇺 Tiếng Nga", "ar": "🇸🇦 Tiếng Ả Rập",
@@ -53,15 +53,24 @@ def get_friendly_locale(locale: str) -> str:
         "ms": "🇲🇾 Tiếng Mã Lai", "tr": "🇹🇷 Tiếng Thổ Nhĩ Kỳ", "pl": "🇵🇱 Tiếng Ba Lan",
         "nl": "🇳🇱 Tiếng Hà Lan", "sv": "🇸🇪 Tiếng Thụy Điển", "da": "🇩🇰 Tiếng Đan Mạch",
         "fi": "🇫🇮 Tiếng Phần Lan", "nb": "🇳🇴 Tiếng Na Uy", "cs": "🇨🇿 Tiếng Séc",
-        "el": "🇬🇷 Tiếng Hy Lạp", "he": "🇮🇱 Tiếng Hebrew", "ro": "🇷🇴 Tiếng Romania",
+        "el": "🇬🇷 Tiếng Hy Lạp", "he": "🇮🇱 Tiếng Do Thái", "ro": "🇷🇴 Tiếng Romania",
         "hu": "🇭🇺 Tiếng Hungary", "uk": "🇺🇦 Tiếng Ukraina", "ta": "🇮🇳 Tiếng Tamil",
-        "te": "🇮🇳 Tiếng Telugu", "bn": "🇧🇩 Tiếng Bengali", "ur": "🇵🇰 Tiếng Urdu",
+        "te": "🇮🇳 Tiếng Telugu", "bn": "🇧🇩 Tiếng Bengal", "ur": "🇵🇰 Tiếng Urdu",
         "fa": "🇮🇷 Tiếng Ba Tư", "sk": "🇸🇰 Tiếng Slovak", "bg": "🇧🇬 Tiếng Bulgaria",
         "hr": "🇭🇷 Tiếng Croatia", "sr": "🇷🇸 Tiếng Serbia", "ca": "🇪🇸 Tiếng Catalan",
         "af": "🇿🇦 Tiếng Afrikaans", "sw": "🇰🇪 Tiếng Swahili", "tl": "🇵🇭 Tiếng Tagalog",
         "km": "🇰🇭 Tiếng Khmer", "lo": "🇱🇦 Tiếng Lào", "my": "🇲🇲 Tiếng Myanmar",
         "jv": "🇮🇩 Tiếng Java", "zu": "🇿🇦 Tiếng Zulu", "cy": "🏴󠁧󠁢󠁷󠁬󠁳󠁿 Tiếng Wales",
         "ga": "🇮🇪 Tiếng Ireland", "mt": "🇲🇹 Tiếng Malta", "is": "🇮🇸 Tiếng Iceland",
+        "am": "🇪🇹 Tiếng Amharic", "az": "🇦🇿 Tiếng Azerbaijan", "bs": "🇧🇦 Tiếng Bosnia",
+        "et": "🇪🇪 Tiếng Estonia", "fil": "🇵🇭 Tiếng Philipin", "gl": "🇪🇸 Tiếng Galicia",
+        "gu": "🇮🇳 Tiếng Gujarat", "iu": "🇨🇦 Tiếng Inuktitut", "ka": "🇬🇪 Tiếng Gruzia",
+        "kk": "🇰🇿 Tiếng Kazakh", "kn": "🇮🇳 Tiếng Kannada", "lt": "🇱🇹 Tiếng Litva",
+        "lv": "🇱🇻 Tiếng Latvia", "mk": "🇲🇰 Tiếng Macedonia", "ml": "🇮🇳 Tiếng Malayalam",
+        "mn": "🇲🇳 Tiếng Mông Cổ", "mr": "🇮🇳 Tiếng Marathi", "ne": "🇳🇵 Tiếng Nepal",
+        "ps": "🇦🇫 Tiếng Pashto", "si": "🇱🇰 Tiếng Sinhala", "sl": "🇸🇮 Tiếng Slovenia",
+        "so": "🇸🇴 Tiếng Somali", "sq": "🇦🇱 Tiếng Albania", "su": "🇮🇩 Tiếng Sunda",
+        "uz": "🇺🇿 Tiếng Uzbek"
     }
     REGION_MAP = {
         "VN": "Việt Nam", "US": "Mỹ", "GB": "Anh", "AU": "Úc", "CA": "Canada",
