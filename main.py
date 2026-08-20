@@ -176,6 +176,7 @@ class RenderRequest(BaseModel):
     bass: int = 0
     env: str = "podcast"
     custom_dict: dict = {}
+    use_bgm: bool = False
 
 async def process_job_queue():
     global IS_PROCESSING
@@ -209,6 +210,8 @@ async def process_job_queue():
                     reverb=job["reverb"],
                     echo=job["echo"],
                     bass=job["bass"],
+                    env=job["env"],
+                    use_bgm=job["use_bgm"],
                     output_dir=OUTPUT_DIR,
                     job_id=job_id,
                     custom_dict=job["custom_dict"],
@@ -273,6 +276,8 @@ async def start_render(req: RenderRequest, background_tasks: BackgroundTasks):
         "reverb": req.reverb,
         "echo": req.echo,
         "bass": req.bass,
+        "env": req.env,
+        "use_bgm": req.use_bgm,
         "custom_dict": req.custom_dict,
     }
     JOB_QUEUE.append(job_id)

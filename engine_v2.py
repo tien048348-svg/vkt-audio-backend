@@ -149,7 +149,8 @@ def generate_json(words: list[WordTiming]) -> str:
 
 async def process_full_job(
     script: str, voice: str, rate: int, pitch: int, volume: int,
-    reverb: int, echo: int, bass: int, output_dir: str, job_id: str,
+    reverb: int, echo: int, bass: int, env: str, use_bgm: bool,
+    output_dir: str, job_id: str,
     custom_dict: dict = None,
     progress_callback=None
 ):
@@ -248,22 +249,41 @@ async def process_full_job(
     if progress_callback:
         await progress_callback(85, total_chunks, total_chunks)
 
-    # Áp dụng hiệu ứng FFmpeg (Vang, Bass)
-    if reverb > 0 or echo > 0 or bass > 0:
-        filters = []
-        if bass > 0:
-            gain = (bass / 100) * 25
-            filters.append(f"bass=g={gain}:f=100:w=0.5")
-        if reverb > 0 or echo > 0:
-            delay = int(50 + (echo / 100) * 550)
-            decay = 0.2 + (max(reverb, echo) / 100) * 0.7
-            filters.append(f"aecho=0.8:0.9:{delay}:{decay}")
+    bgm_path = None
+    if use_bgm and env:
+        potential_bgm = os.path.join(os.path.dirname(__file__), "bgm", f"{env}.mp3")
+        if os.path.exists(potential_bgm):
+            bgm_path = potential_bgm
+
+    filters = []
+    if bass > 0:
+        gain = (bass / 100) * 25
+        filters.append(f"bass=g={gain}:f=100:w=0.5")
+    if reverb > 0 or echo > 0:
+        delay = int(50 + (echo / 100) * 550)
+        decay = 0.2 + (max(reverb, echo) / 100) * 0.7
+        filters.append(f"aecho=0.8:0.9:{delay}:{decay}")
+
+    needs_ffmpeg = len(filters) > 0 or bgm_path is not None
+
+    if needs_ffmpeg:
         try:
             ffmpeg_exe = os.path.join(os.path.dirname(__file__), "ffmpeg.exe")
             ffmpeg_cmd = ffmpeg_exe if os.path.exists(ffmpeg_exe) else "ffmpeg"
-            cmd = [ffmpeg_cmd, "-y", "-i", raw_mp3_path, "-af", ",".join(filters), mp3_path]
+            
+            cmd = [ffmpeg_cmd, "-y", "-i", raw_mp3_path]
+            
+            if bgm_path:
+                cmd.extend(["-stream_loop", "-1", "-i", bgm_path])
+                filter_complex = f"[0:a]{','.join(filters)},volume=1.0[v];" if filters else "[0:a]volume=1.0[v];"
+                filter_complex += "[1:a]volume=0.15[b];[v][b]amix=inputs=2:duration=first:dropout_transition=2"
+                cmd.extend(["-filter_complex", filter_complex])
+            else:
+                cmd.extend(["-af", ",".join(filters)])
+                
+            cmd.append(mp3_path)
             subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        except (FileNotFoundError, subprocess.CalledProcessError):
+        except Exception:
             shutil.copy(raw_mp3_path, mp3_path)
     else:
         shutil.copy(raw_mp3_path, mp3_path)
