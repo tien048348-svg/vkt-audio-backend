@@ -811,8 +811,31 @@ def get_friendly_locale(locale: str) -> str:
         "uz": "🇺🇿 Tiếng Uzbek"
     }
 
-    lang_code = locale.split("-")[0].lower()
+    # Uu tien full locale truoc (xu ly cac ngon ngu co nhieu vung)
+    full_locale_map = {
+        "zh-CN": "🇨🇳 Tiếng Trung Giản Thể",
+        "zh-TW": "🇹🇼 Tiếng Trung Phồn Thể (Đài Loan)",
+        "zh-HK": "🇭🇰 Tiếng Trung Hồng Kông",
+        "en-US": "🇺🇸 Tiếng Anh (Mỹ)",
+        "en-GB": "🇬🇧 Tiếng Anh (Anh)",
+        "en-AU": "🇦🇺 Tiếng Anh (Úc)",
+        "en-CA": "🇨🇦 Tiếng Anh (Canada)",
+        "en-IN": "🇮🇳 Tiếng Anh (Ấn Độ)",
+        "en-HK": "🇭🇰 Tiếng Anh (Hồng Kông)",
+        "fr-FR": "🇫🇷 Tiếng Pháp (Pháp)",
+        "fr-CA": "🇨🇦 Tiếng Pháp (Canada)",
+        "pt-BR": "🇧🇷 Tiếng Bồ Đào Nha (Brazil)",
+        "pt-PT": "🇵🇹 Tiếng Bồ Đào Nha (Bồ Đào Nha)",
+        "es-ES": "🇪🇸 Tiếng Tây Ban Nha (Tây Ban Nha)",
+        "es-MX": "🇲🇽 Tiếng Tây Ban Nha (Mexico)",
+        "es-US": "🇺🇸 Tiếng Tây Ban Nha (Mỹ)",
+        "ar-SA": "🇸🇦 Tiếng Ả Rập (Saudi Arabia)",
+        "ar-EG": "🇪🇬 Tiếng Ả Rập (Ai Cập)",
+    }
+    if locale in full_locale_map:
+        return full_locale_map[locale]
 
+    lang_code = locale.split("-")[0].lower()
     return lang_map.get(lang_code, locale)
 
 
