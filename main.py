@@ -1576,117 +1576,27 @@ class PreviewRequest(BaseModel):
 
 
 @app.post("/api/preview")
-
-
-
 async def preview_audio(req: PreviewRequest):
-
-
-
-    import uuid
-
-
-
-    from engine_v2 import process_full_job
-
-
-
+    from fast_preview import fast_preview
     
-
-
-
-    uid = "prev_" + uuid.uuid4().hex[:8]
-
-
-
     text_content = req.text or "Xin chào"
-
-
-
     
-
-
-
     try:
-
-
-
-        mp3_path = await process_full_job(
-
-
-
+        mp3_path = await fast_preview(
             script=text_content,
-
-
-
             voice=req.voice,
-
-
-
             rate=req.rate,
-
-
-
             pitch=req.pitch,
-
-
-
             volume=req.volume,
-
-
-
             reverb=req.reverb,
-
-
-
             echo=req.echo,
-
-
-
             bass=req.bass,
-
-
-
-            env="",
-
-
-
-            use_bgm=False,
-
-
-
             output_dir="jobs",
-
-
-
-            job_id=uid,
-
-
-
-            custom_dict=req.custom_dict,
-
-
-
-            is_preview=True
-
-
-
+            custom_dict=req.custom_dict
         )
-
-
-
         return FileResponse(mp3_path, media_type="audio/mpeg")
-
-
-
     except Exception as e:
-
-
-
         print("PREVIEW ERROR:", e)
-
-
-
         raise HTTPException(status_code=500, detail=str(e))
 
 

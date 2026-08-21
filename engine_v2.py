@@ -152,8 +152,7 @@ async def process_full_job(
     reverb: int, echo: int, bass: int, env: str, use_bgm: bool,
     output_dir: str, job_id: str,
     custom_dict: dict = None,
-    progress_callback=None,
-    is_preview: bool = False
+    progress_callback=None
 ):
     import subprocess
     os.makedirs(output_dir, exist_ok=True)
@@ -291,9 +290,6 @@ async def process_full_job(
 
     if os.path.exists(raw_mp3_path):
         os.remove(raw_mp3_path)
-
-    if is_preview:
-        return mp3_path
 
     # Ghi subtitle files
     srt_path = os.path.join(output_dir, f"{job_id}.srt")
