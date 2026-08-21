@@ -831,6 +831,8 @@ def get_friendly_locale(locale: str) -> str:
         "es-US": "🇺🇸 Tiếng Tây Ban Nha (Mỹ)",
         "ar-SA": "🇸🇦 Tiếng Ả Rập (Saudi Arabia)",
         "ar-EG": "🇪🇬 Tiếng Ả Rập (Ai Cập)",
+        "zh-CN-liaoning": "🇨🇳 Tiếng Trung Đông Bắc (Liêu Ninh)",
+        "zh-CN-shaanxi": "🇨🇳 Tiếng Trung Thiểm Tây",
     }
     if locale in full_locale_map:
         return full_locale_map[locale]
