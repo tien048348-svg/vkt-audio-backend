@@ -1,4 +1,5 @@
-﻿import asyncio
+import re
+import asyncio
 
 
 
@@ -1300,7 +1301,11 @@ async def get_voices():
 
 
 
-    for k in sorted(grouped.keys()):
+    def _sort_key(name):
+        # Boc emoji ra, chi sort theo phan chu de cung gia dinh ngon ngu nam canh nhau
+        return re.sub(r"[🇠-🧿]+\s*", "", name).strip().lower()
+
+    for k in sorted(grouped.keys(), key=_sort_key):
 
 
 
